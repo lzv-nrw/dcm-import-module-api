@@ -7,7 +7,7 @@ info:
     Entities) from a source system using protocol-specific plugins (e.g., via
     OAI-PMH) and their conversion into IPs (Information Packages) by utilizing
     an IP Builder-container.
-  version: 5.2.0
+  version: 5.2.1
 servers:
   - url: 'http://localhost:8080/'
 externalDocs:

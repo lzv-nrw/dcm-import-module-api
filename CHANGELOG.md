@@ -1,5 +1,11 @@
 # Changelog
 
+## [5.2.1] - 2024-11-21
+
+### Changed
+
+- updated package metadata and README
+
 ## [5.2.0] - 2024-10-11
 
 ### Added

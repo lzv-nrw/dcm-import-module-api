@@ -2,10 +2,11 @@ import os
 from setuptools import setup
 
 setup(
-    version="5.2.0",
+    version="5.2.1",
     name="dcm-import-module-api",
-    description="api for import-module-containers",
+    description="specification of the DCM Import Module API",
     author="LZV.nrw",
+    license="MIT",
     install_requires=[
     ],
     packages=[
