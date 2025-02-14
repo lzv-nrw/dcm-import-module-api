@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.0.0] - 2025-02-14
+
+### Changed
+
+- **Breaking:** replaced connected services-API-related blocks in request bodies with free-form objects (individual blocks for calls to Object Validator and IP Builder)
+
 ## [5.2.1] - 2024-11-21
 
 ### Changed

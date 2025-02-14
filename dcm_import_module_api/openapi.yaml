@@ -7,7 +7,7 @@ info:
     Entities) from a source system using protocol-specific plugins (e.g., via
     OAI-PMH) and their conversion into IPs (Information Packages) by utilizing
     an IP Builder-container.
-  version: 5.2.1
+  version: 6.0.0
 servers:
   - url: 'http://localhost:8080/'
 externalDocs:
@@ -92,19 +92,18 @@ paths:
                             sourceIdentifier: oai:repository:12345
                             IPIdentifier: ip00
                             fetchedPayload: true
-                            logId: 0@native
                           ie01:
                             path: ie/bcdef-23456-ghijkl-78901
                             sourceIdentifier: oai:repository:6789
                             IPIdentifier: null
                             fetchedPayload: false
-                            logId: 0@native
                         IPs:
                           ip00:
                             path: ip/cdefg-34567-hijklm-89012
                             valid: true
                             IEIdentifier: ie00
-                            logId: 1@ip_builder
+                            logId:
+                              - ip00@ip_builder
         '400':
           $ref: '#/components/responses/400BadRequest'
         '404':
@@ -117,7 +116,9 @@ paths:
       description: |-
         Perform an import of pre-built IPs from internal storage and
         issue corresponding validation requests with an IP Builder-
-        service (only if validation is given).
+        service (only if specificationValidation is given) and/or an
+        Object Validator-service (only if objectValidation is given).
+        See GET-/identify for more information on connected services.
 
         If the request is accepted, a 201-response is triggered
         containing a JobToken. This token's value is required in the
@@ -145,25 +146,35 @@ paths:
                       default: True
                   required:
                     - target
-                validation:
+                specificationValidation:
                   type: object
                   description:
-                    validation-specific properties
-                    (view details in the '/build' endpoint of the IP Builder-API)
-
-                    The example corresponds to IP Builder-API version 1.0.0
+                    This block of the request is hydrated with target-
+                    information and then forwarded to the respective
+                    IP Builder-service for validation.
+                  additionalProperties: true
                   example:
-                    modules:
-                      - bagit_profile
-                      - payload_structure
-                      - payload_integrity
-                      - file_format
-                    args:
-                      bagit_profile:
-                        baginfoTagCaseSensitive: true
-                        profileUrl: bagit_profiles/dcm_bagit_profile_v1.0.0.json
-                      payload_structure:
-                        profileUrl: bagit_profiles/dcm_bagit_profile_v1.0.0.json
+                    BagItProfile: "bagit_profiles/dcm_bagit_profile_v1.0.0.json"
+                    BagItPayloadProfile: "bagit_profiles/dcm_bagit_profile_v1.0.0.json"
+                objectValidation:
+                  type: object
+                  description:
+                    This block of the request is hydrated with target-
+                    information and then forwarded to the respective
+                    Object Validator-service for validation.
+                  additionalProperties: true
+                  example:
+                    plugins:
+                      validation-request-1:
+                        plugin: integrity
+                        args:
+                          method: md5
+                          value: 46a78da2a246a86f76d066db766cda4f
+                      validation-request-2:
+                        plugin: jhove
+                        args:
+                          format_identification:
+                            plugin: fido-puid
                 callbackUrl:
                   $ref: '#/components/schemas/CallbackUrl'
               required:
@@ -187,8 +198,11 @@ paths:
       summary: import IPs from external source
       description: |-
         Perform an import of IEs from some source system and issue
-        corresponding build requests with an IP Builder-service (only if
-        build is given).
+        corresponding requests for building IPs via an IP Builder-
+        service (only if build is given) and for validation with an
+        Object Validator-service (only if both build and objectValidation
+        are given). See GET-/identify for more information on connected
+        services.
 
         If the request is accepted, a 201-response is triggered
         containing a JobToken. This token's value is required in the
@@ -223,34 +237,38 @@ paths:
                 build:
                   type: object
                   description:
-                    build-specific properties
-                    (view details in the '/build' endpoint of the IP Builder-API;
-                    the 'target' property is set by the app and should be omitted)
-
-                    The example corresponds to IP Builder-API version 1.0.0
+                    This block of the request is hydrated with target-
+                    information and then forwarded to the respective
+                    IP Builder-service to build an IP and validate it
+                    according to specification.
+                  additionalProperties: true
                   example:
-                    configuration: <base64-string of serialized python-object>
+                    mappingPlugin:
+                      plugin: oai-mapper
+                      args:
+                        additionalMetadata:
+                          DC-Rights: "CC BY-NC 4.0"
                     BagItProfile: https://www.lzv.nrw/bagit_profile_v1.0.0.json
                     BagItPayloadProfile: https://www.lzv.nrw/bagit_profile_v1.0.0.json
-                validation:
+                objectValidation:
                   type: object
                   description:
-                    validation-specific properties
-                    (view details in the '/build' endpoint of the IP Builder-API)
-
-                    The example corresponds to IP Builder-API version 1.0.0
+                    This block of the request is hydrated with target-
+                    information and then forwarded to the respective
+                    Object Validator-service for validation.
+                  additionalProperties: true
                   example:
-                    modules:
-                      - bagit_profile
-                      - payload_structure
-                      - payload_integrity
-                      - file_format
-                    args:
-                      bagit_profile:
-                        baginfoTagCaseSensitive: true
-                        profileUrl: bagit_profiles/dcm_bagit_profile_v1.0.0.json
-                      payload_structure:
-                        profileUrl: bagit_profiles/dcm_bagit_profile_v1.0.0.json
+                    plugins:
+                      validation-request-1:
+                        plugin: integrity
+                        args:
+                          method: md5
+                          value: 46a78da2a246a86f76d066db766cda4f
+                      validation-request-2:
+                        plugin: jhove
+                        args:
+                          format_identification:
+                            plugin: fido-puid
                 callbackUrl:
                   $ref: '#/components/schemas/CallbackUrl'
               required:
@@ -601,7 +619,7 @@ components:
               example:
                 plugin-0:
                   name: plugin-0
-                  description: this plugin performs ...
+                  description: performs ...
                   signature:
                     type: object
                     required: true
@@ -610,6 +628,10 @@ components:
                         type: integer
                         required: false
                         default: 0
+                    additional_properties: false
+                  context: context-0
+                  dependencies:
+                    dependency-a: "1.0.0"
             services:
               type: object
               description:
@@ -658,7 +680,7 @@ components:
           example: 0
         default:
           description: |-
-            (optional) default value
+            default value
 
             only applicable in case of "required: false" and only to
             primitive types or array
@@ -680,12 +702,16 @@ components:
         properties:
           type: object
           description: |-
-            mapping of PluginArgSignatures
-
             required in case of "type: object"; mapping of child-names
             and child-PluginArgSignature
           additionalProperties:  # valid but not rendered in SwaggerUI
             $ref: '#/components/schemas/PluginArgSignature'
+        additional_properties:
+          type: boolean
+          description: |-
+            only applicable in case of "type: object"; if false, only
+            explicitly listed properties are accepted
+          example: false
       example:
         type: integer
         required: false
@@ -705,29 +731,25 @@ components:
         description:
           type: string
           description: description of plugin features
-          example: this plugin performs ...
+          example: performs ...
         signature:
           $ref: '#/components/schemas/PluginArgSignature'
+        context:
+          type: string
+          description: identifier for the plugin context
+          example: context-0
         dependencies:
-          type: array
-          description:
-            list of names and installed versions of plugin dependencies
-          items:
-            title: Dependency
-            type: object
-            description: pairs of package name and version string
-            properties:
-              name:
-                type: string
-                description: package name
-                example: plugin-package
-              version:
-                type: string
-                description: version string of installed package
-                example: 1.0.0
-            required:
-              - name
-              - version
+          type: object
+          description: plugin's dependency versions
+          additionalProperties:
+            type: string
+            description: dependency version
+          example:
+            dependency-a: "1.0.0"
+        info:
+          type: object
+          description: plugin-specific information in custom format
+          additionalProperties: true
       required:
         - name
         - description
@@ -786,16 +808,15 @@ components:
         This type of identifier is used to identify a Report's child.
       type: string
       pattern: /[0-9a-zA-Z-_]+@[0-9a-zA-Z-_]+/
-      example: 0@native
+      example: ip00@ip_builder
     IE:
       title: IE
       description:
         An IE is represented by its relative path within the shared
         filesystem. Additional information includes a source system
         identifier (optional), a reference to an IP that has been built
-        from this IE (if available), a boolean providing information on
-        whether the payload has been fetched, and a reference to the
-        full plugin-Report (given in Report.children).
+        from this IE (if available), and a boolean providing information
+        on whether the payload has been fetched.
       type: object
       properties:
         path:
@@ -817,13 +838,10 @@ components:
           type: boolean
           description: true if the payload is present
           example: true
-        logId:
-          $ref: '#/components/schemas/ReportIdentifier'
       required:
         - path
-        - IPIdentifier
+        - sourceIdentifier
         - fetchedPayload
-        - logId
     IP:
       title: IP
       description:
@@ -849,9 +867,10 @@ components:
             /import/external)
           example: ie01
         logId:
-          $ref: '#/components/schemas/ReportIdentifier'
-      required:
-        - path
+          type: array
+          description: list of identifiers
+          items:
+            $ref: '#/components/schemas/ReportIdentifier'
     JobData:
       title: JobData
       description:
@@ -883,12 +902,10 @@ components:
             path: ie/abcde-12345-fghijk-67890
             IPIdentifier: ip00
             fetchedPayload: true
-            logId: 0@native
           ie01:
             path: ie/bcdef-23456-ghijkl-78901
             IPIdentifier: null
             fetchedPayload: false
-            logId: 0@native
         IPs:
           ip00:
             path: ip/cdefg-34567-hijklm-89012
@@ -1026,7 +1043,9 @@ components:
             args:
               metadata_prefix: oai_dc
           build:
-            configuration: <base64-string of serialized python-object>
+            mappingPlugin:
+              plugin: mapping-plugin
+              args: {}
         progress:
           status: completed
           verbose: Job terminated normally.
@@ -1043,6 +1062,12 @@ components:
             - datetime: "2024-01-01T00:00:01+01:00"
               origin: Import Module
               body: Starting harvest.
+            - datetime: "2024-01-01T00:00:01+01:00"
+              origin: OAI-Plugin
+              body: Issue request 'ListIdentifiers'.
+            - datetime: "2024-01-01T00:00:01+01:00"
+              origin: OAI-Plugin
+              body: Got no records.
             - datetime: "2024-01-01T00:00:03+01:00"
               origin: Import Module
               body: Harvest returned empty.
@@ -1050,31 +1075,7 @@ components:
               origin: Import Module
               body: Skipping build stage.
         children:
-          0@native:
-            host: https://www.lzv.nrw/import_module
-            token:
-              value: 37ee72d6-80ab-4dcd-a68d-f8d32766c80d
-              expires: true
-              expires_at: "2024-01-01T00:00:00+01:00"
-            args:  # plugin-args
-              metadata_prefix: oai_dc
-            progress:
-              status: "completed"
-              verbose: "Job terminated with errors."
-              numeric: 100
-            log:
-              EVENT:
-                - datetime: "2024-01-01T00:00:00+01:00"
-                  origin: OAI-Plugin
-                  body: Issue request 'ListIdentifiers'.
-                - datetime: "2024-01-01T00:00:00+01:00"
-                  origin: OAI-Plugin
-                  body: Got two records.
-              ERROR:
-                - datetime: "2024-01-01T00:00:00+01:00"
-                  origin: OAI-Plugin
-                  body: Unable to download file '<url>' in IE 'ie01'.
-          1@ip_builder:
+          ip00@ip_builder:
             host: https://www.lzv.nrw/ip_builder
             token:
               value: 82d88290-af4d-47fd-b77a-caee742cc2f7
@@ -1083,7 +1084,9 @@ components:
               build:
                 target:
                   path: ie/abcde-12345-fghijk-67890
-                configuration: <base64-string of serialized python-object>
+                mappingPlugin:
+                  plugin: mapping-plugin
+                  args: {}
             progress:
               status: "completed"
               verbose: "Job terminated normally."
