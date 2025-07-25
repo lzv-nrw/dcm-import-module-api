@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.0] - 2025-07-25
+
+### Added
+
+- added test-configuration to GET-/identify response
+- added test-import mode to POST-/import/internal
+
 ## [6.0.0] - 2025-02-14
 
 ### Changed

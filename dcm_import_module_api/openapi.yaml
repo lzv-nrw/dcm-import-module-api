@@ -7,7 +7,7 @@ info:
     Entities) from a source system using protocol-specific plugins (e.g., via
     OAI-PMH) and their conversion into IPs (Information Packages) by utilizing
     an IP Builder-container.
-  version: 6.0.0
+  version: 6.1.0
 servers:
   - url: 'http://localhost:8080/'
 externalDocs:
@@ -144,6 +144,13 @@ paths:
                         whether to search for multiple IPs in the given
                         Target
                       default: True
+                    test:
+                      type: boolean
+                      description:
+                        whether to run import in test-mode (process only
+                        subset of collected targets)
+                      default: false
+                      example: false
                   required:
                     - target
                 specificationValidation:
@@ -585,6 +592,24 @@ components:
                         - duration
                         - max_retries
                         - retry_interval
+                    test:
+                      type: object
+                      description: import-test-related settings
+                      properties:
+                        volume:
+                          type: integer
+                          description:
+                            number of records processed during a test-import
+                          example: 2
+                        strategy:
+                          type: string
+                          description:
+                            strategy for selecting subset of records during
+                            a test-import
+                          enum:
+                            - first
+                            - random
+                          example: first
                   required:
                     - output
                     - timeout
