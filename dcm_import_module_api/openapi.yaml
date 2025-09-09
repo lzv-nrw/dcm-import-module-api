@@ -7,7 +7,7 @@ info:
     Entities) from a source system using protocol-specific plugins (e.g., via
     OAI-PMH) and their conversion into IPs (Information Packages) by utilizing
     an IP Builder-container.
-  version: 6.2.0
+  version: 7.0.0
 servers:
   - url: 'http://localhost:8080/'
 externalDocs:
@@ -110,20 +110,20 @@ paths:
           $ref: '#/components/responses/404NoTarget'
         '503':
           $ref: '#/components/responses/503Busy'
-  /import/internal:
+  /import/ips:
     post:
-      summary: import IPs from internal storage
+      summary: import IPs
       description: |-
-        Perform an import of pre-built IPs from internal storage and
-        issue corresponding validation requests with an IP Builder-
-        service (only if specificationValidation is given) and/or an
-        Object Validator-service (only if objectValidation is given).
-        See GET-/identify for more information on connected services.
+        Perform an import of pre-built IPs and issue corresponding
+        validation requests with an IP Builder-service (only if
+        specificationValidation is given) and/or an Object Validator-
+        service (only if objectValidation is given). See GET-/identify
+        for more information on connected services.
 
         If the request is accepted, a 201-response is triggered
         containing a JobToken. This token's value is required in the
         /report-GET endpoint to get a Report.
-      operationId: import_internal
+      operationId: import_ips
       tags:
         - import
       requestBody:
@@ -207,12 +207,12 @@ paths:
           $ref: '#/components/responses/422SemanticProblem'
         '503':
           $ref: '#/components/responses/503Busy'
-  /import/external:
+  /import/ies:
     post:
-      summary: import IPs from external source
+      summary: import IEs
       description: |-
-        Perform an import of IEs from some source system and issue
-        corresponding requests for building IPs via an IP Builder-
+        Perform an import of IEs from some source system and optionally
+        ssue corresponding requests for building IPs via an IP Builder-
         service (only if build is given) and for validation with an
         Object Validator-service (only if both build and objectValidation
         are given). See GET-/identify for more information on connected
@@ -221,7 +221,7 @@ paths:
         If the request is accepted, a 201-response is triggered
         containing a JobToken. This token's value is required in the
         /report-GET endpoint to get a Report.
-      operationId: import_external
+      operationId: import_ies
       tags:
         - import
       requestBody:
@@ -320,25 +320,6 @@ paths:
         - import
       parameters:
         - $ref: '#/components/parameters/Token'
-        - name: broadcast
-          in: query
-          description:
-            whether this request should be broadcasted
-            (only relevant in parallel deployment and only if message
-            broadcasting is configured)
-          schema:
-            type: boolean
-            default: true
-          required: false
-        - name: re-queue
-          in: query
-          description:
-            whether the associated token should be added to the queue
-            again
-          schema:
-            type: boolean
-            default: false
-          required: false
       requestBody:
         required: true
         content:
@@ -372,7 +353,7 @@ paths:
               schema:
                 type: string
                 example:
-                  "notification service unavailable"
+                  "controller unavailable"
 components:
   schemas:
     Status:
@@ -479,103 +460,67 @@ components:
                   type: string
                   description: mount point of shared file system
                   example: /file_storage
-                orchestration:
+                orchestra:
                   type: object
-                  description: orchestration-related settings
+                  description: orchestra-related settings
                   properties:
-                    at_startup:
+                    atStartup:
                       type: boolean
                       description:
                         whether orchestration-processing loop is run at startup
                       example: true
-                    queue:
-                      $ref: '#/components/schemas/DBAdapter'
-                    registry:
-                      $ref: '#/components/schemas/DBAdapter'
-                    token:
+                    poolSize:
+                      type: integer
+                      description: number of worker-threads
+                      example: 1
+                    daemonInterval:
+                      type: number
+                      description: interval of orchestra-restarts in seconds
+                      example: 1
+                    controller:
                       type: object
-                      description: orchestration token-related settings
+                      description: controller settings
                       properties:
-                        expiration:
-                          type: boolean
-                          description: whether job tokens (and their
-                            associated info like report) expire
-                          example: true
-                        duration:
-                          type: integer
-                          description:
-                            time until job token expires in seconds
-                          example: 3600
-                      required:
-                        - expiration
-                        - duration
-                    debug:
-                      type: boolean
-                      description: whether to have orchestrator print
-                        debug-information
-                      example: true
-                    controls_api:
-                      type: boolean
-                      description: whether the orchestration-controls
-                        API is available
-                      example: true
-                    abort:
-                      type: object
-                      description: |-
-                        abort-related settings
-
-                        only relevant in parallel deployment
-                      properties:
-                        subscription:
-                          type: boolean
-                          description:
-                            whether a subscription to the abort-notifications
-                            is made
-                          example: true
-                        url:
+                        type:
                           type: string
-                          description: url of the notification service
-                          example: https://www.lzv.nrw/abort-notifications
-                        timeout:
+                          description: controller type
+                          example: sqlite
+                        args:
                           type: object
-                          description: timeout-related settings
-                          properties:
-                            duration:
-                              type: number
-                              description: timeout duration
-                              example: 1.0
-                          required:
-                            - duration
-                        callback:
-                          type: string
-                          description: |-
-                            url for abort-callbacks
-
-                            if omitted, the subscriber's request address
-                            is used (as determined by the notification
-                            service)
-                          example: https://www.lzv.nrw/subscriber
+                          description: controller arguments
+                          additionalProperties: true
+                          example:
+                            lock_ttl: 30
                       required:
-                        - subscription
-                    daemon_interval:
+                        - type
+                        - args
+                    worker:
+                      type: object
+                      description: worker settings
+                      properties:
+                        args:
+                          type: object
+                          description: controller arguments
+                          additionalProperties: true
+                          example:
+                            lock_refresh_interval: 10
+                        interval:
+                          type: number
+                          description: interval of the worker loop in seconds
+                          example: 1
+                      required:
+                        - args
+                        - interval
+                    abortTimeout:
                       type: number
-                      description:
-                        interval of orchestrator-restarts (after crash) in
-                        seconds
-                      example: 1
-                    orchestrator_interval:
-                      type: number
-                      description: time in seconds between each iteration
-                        of the orchestrator's processing loop
-                      example: 1
+                      description: duration for a timeout in an abort-request
                   required:
-                    - at_startup
-                    - queue
-                    - registry
-                    - token
-                    - debug
-                    - controls_api
-                    - abort
+                    - atStartup
+                    - poolSize
+                    - daemonInterval
+                    - controller
+                    - worker
+                    - abortTimeout
                 import:
                   type: object
                   description: import-related settings
@@ -647,7 +592,7 @@ components:
               required:
                 - allow_cors
                 - fs_mount_point
-                - orchestration
+                - orchestra
                 - import
                 - build
             plugins:
@@ -903,7 +848,7 @@ components:
           description:
             reference to IE from which this IP has been built (valid
             only in Report.data-context and only relevant for calls to
-            /import/external)
+            /import/ies)
           example: ie01
         logId:
           type: array
@@ -926,7 +871,7 @@ components:
           type: object
           description:
             generated IEs by identifier (see IP.IEIdentifier); only
-            relevant for calls to /import/external
+            relevant for calls to /import/ies
           additionalProperties:
             $ref: '#/components/schemas/IE'
         IPs:

@@ -2,7 +2,7 @@ import os
 from setuptools import setup
 
 setup(
-    version="6.2.0",
+    version="7.0.0",
     name="dcm-import-module-api",
     description="specification of the DCM Import Module API",
     author="LZV.nrw",

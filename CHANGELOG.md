@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.0.0] - 2025-09-09
+
+### Changed
+
+- **Breaking:** renamed paths for import-endpoints
+- **Breaking:** updated `SelfDescription`-schema regarding new `orchestra`-package of `dcm-common`
+
+### Removed
+
+- **Breaking:** removed obsolete broadcast- & requeue-options in abort
+
 ## [6.2.0] - 2025-08-20
 
 ### Added
