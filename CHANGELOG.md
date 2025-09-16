@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.1.0] - 2025-09-16
+
+### Added
+
+- added support for hotfolders in `POST-/import/ips`-endpoint
+
 ## [7.0.0] - 2025-09-09
 
 ### Changed

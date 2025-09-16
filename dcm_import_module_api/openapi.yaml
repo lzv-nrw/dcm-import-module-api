@@ -7,7 +7,7 @@ info:
     Entities) from a source system using protocol-specific plugins (e.g., via
     OAI-PMH) and their conversion into IPs (Information Packages) by utilizing
     an IP Builder-container.
-  version: 7.0.0
+  version: 7.1.0
 servers:
   - url: 'http://localhost:8080/'
 externalDocs:
@@ -119,6 +119,9 @@ paths:
         specificationValidation is given) and/or an Object Validator-
         service (only if objectValidation is given). See GET-/identify
         for more information on connected services.
+
+        The specified target is emptied from the given target after the
+        data has been imported.
 
         If the request is accepted, a 201-response is triggered
         containing a JobToken. This token's value is required in the
@@ -745,12 +748,18 @@ components:
     ImportTarget:
       title: ImportTarget
       description:
-        Target directory for importing pre-built IPs. It is represented
-        by its relative path within the shared filesystem.
+        Target information for importing pre-built IPs. It is represented
+        by a relative path within the shared filesystem and an optional
+        hotfolder-id (which defines a base-directory). If the hotfolder is
+        omitted, the applications mount-point is used instead.
       type: object
       properties:
         path:
           $ref: '#/components/schemas/Path'
+        hotfolderId:
+          type: string
+          description: hotfolder identifier
+          example: hotfolder-0
       required:
         - path
     Token: # see also components/parameters/Token
